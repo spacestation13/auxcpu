@@ -32,3 +32,24 @@ pub fn true_cpu_at_index(index: usize) -> f32 {
 pub fn cpu_values() -> [f32; 16] {
 	auxcpu_core::cpu_table()
 }
+
+#[cfg(feature = "maptick")]
+#[byond_fn]
+pub fn maptick_init() -> Option<String> {
+	match auxcpu_maptick::init() {
+		Ok(_) => None,
+		Err(error) => Some(error),
+	}
+}
+
+#[cfg(feature = "maptick")]
+#[byond_fn]
+pub fn maptick_shutdown() {
+	auxcpu_maptick::shutdown();
+}
+
+#[cfg(feature = "maptick")]
+#[byond_fn]
+pub fn maptick() -> f32 {
+	auxcpu_maptick::last_maptick()
+}

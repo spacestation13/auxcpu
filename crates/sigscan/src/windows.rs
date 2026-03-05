@@ -16,8 +16,8 @@ use windows::{
 
 pub struct Scanner {
 	module: ModuleHandle,
-	data_begin: *mut u8,
-	data_end: *mut u8,
+	pub data_begin: *mut u8,
+	pub data_end: *mut u8,
 }
 
 impl Scanner {
@@ -65,21 +65,21 @@ impl Scanner {
 				{
 					if signature.len() <= signature_offset + 1 {
 						if result.is_some() {
-							// Found two matches
+							// Found two matches.
 							return None;
 						}
-						result = Some(data_current.sub(signature_offset));
-						data_current = data_current.sub(signature_offset);
+						result = Some(data_current.offset(-(signature_offset as isize)));
+						data_current = data_current.offset(-(signature_offset as isize));
 						signature_offset = 0;
 					} else {
 						signature_offset += 1;
 					}
 				} else {
-					data_current = data_current.sub(signature_offset);
+					data_current = data_current.offset(-(signature_offset as isize));
 					signature_offset = 0;
 				}
 
-				data_current = data_current.add(1);
+				data_current = data_current.offset(1);
 			}
 		}
 

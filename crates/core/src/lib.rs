@@ -1,5 +1,5 @@
 use auxcpu_impl::convert_signature;
-use auxcpu_sigscan::Scanner;
+use auxcpu_sigscan::{Scanner, SignatureAndOffset, find};
 use cfg_if::cfg_if;
 
 static mut CPU_VALUE_TABLE: *mut [f32; 16] = std::ptr::null_mut();
@@ -46,8 +46,6 @@ pub fn cpu_table() -> [f32; 16] {
 	}
 }
 
-type SignatureAndOffset = (usize, &'static [Option<u8>]);
-
 cfg_if! {
 	if #[cfg(windows)] {
 		const BYONDCORE: &str = "byondcore.dll";
@@ -58,12 +56,6 @@ cfg_if! {
 		const CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (3, convert_signature!("D8 24 8D"));
 		const CPU_INDEX_SIGNATURE: SignatureAndOffset = (1, convert_signature!("A2 ?? ?? ?? ?? D9 1C 24"));
 	}
-}
-
-fn find(scanner: &Scanner, &(offset, signature): &SignatureAndOffset) -> Option<*mut u8> {
-	scanner
-		.find(signature)
-		.map(|address| unsafe { (address.add(offset) as *const *mut u8).read_unaligned() })
 }
 
 pub fn find_signatures() -> Result<(), String> {

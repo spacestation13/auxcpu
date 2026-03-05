@@ -12,6 +12,10 @@ crate-type = ["cdylib"]
 [dependencies]
 auxtools = { git = "https://github.com/willox/auxtools" }
 auxcpu-core = { path = "../core" }
+auxcpu-maptick = { path = "../maptick", optional = true }
 
 [lints]
 workspace = true
+
+[features]
+maptick = ["auxcpu-maptick"]

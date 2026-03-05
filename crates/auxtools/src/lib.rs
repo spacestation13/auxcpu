@@ -40,3 +40,25 @@ fn cpu_values() {
 	}
 	Ok(list.into())
 }
+
+#[cfg(feature = "maptick")]
+#[hook("/proc/maptick_init")]
+pub fn maptick_init() {
+	match auxcpu_maptick::init() {
+		Ok(_) => Ok(Value::from_string("ok").unwrap()),
+		Err(error) => Err(runtime!("{}", error)),
+	}
+}
+
+#[cfg(feature = "maptick")]
+#[hook("/proc/maptick_shutdown")]
+pub fn maptick_shutdown() {
+	auxcpu_maptick::shutdown();
+	Ok(Value::NULL)
+}
+
+#[cfg(feature = "maptick")]
+#[hook("/proc/maptick")]
+pub fn maptick() {
+	Ok(Value::from(auxcpu_maptick::last_maptick()))
+}

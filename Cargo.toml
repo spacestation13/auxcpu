@@ -2,7 +2,7 @@
 resolver = "3"
 # This should also include auxtools so we can build an auxtools version of the crate
 # But it uh, it's broken right now, and I don't... NEED it. Sooooo
-members = ["crates/byondapi", "crates/core", "crates/impl", "crates/sigscan"]
+members = ["crates/byondapi", "crates/core", "crates/impl", "crates/maptick", "crates/sigscan"]
 
 [workspace.package]
 version = "0.1.0"
