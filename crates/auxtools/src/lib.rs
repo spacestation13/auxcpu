@@ -24,12 +24,37 @@ fn current_cpu_index() {
 	Ok(Value::from(auxcpu_core::current_index() as u32))
 }
 
+#[hook("/proc/current_true_map_cpu")]
+fn current_true_map_cpu() {
+	match auxcpu_core::read_map_cpu() {
+		Ok(value) => Ok(Value::from(value)),
+		Err(_) => Ok(Value::NULL),
+	}
+}
+
+#[hook("/proc/current_map_cpu_index")]
+fn current_map_cpu_index() {
+	match auxcpu_core::current_map_index() {
+		Ok(index) => Ok(Value::from(index as u32)),
+		Err(_) => Ok(Value::NULL),
+	}
+}
+
 #[hook("/proc/true_cpu_at_index")]
 fn true_cpu_at_index(index: Value) {
 	let index = index.as_number()? as usize;
 	auxcpu_core::read_cpu_at_index(index)
 		.map(Value::from)
 		.map_err(|error| runtime!("{}", error))
+}
+
+#[hook("/proc/true_map_cpu_at_index")]
+fn true_map_cpu_at_index(index: Value) {
+	let index = index.as_number()? as usize;
+	match auxcpu_core::read_map_cpu_at_index(index) {
+		Ok(value) => Ok(Value::from(value)),
+		Err(_) => Ok(Value::NULL),
+	}
 }
 
 #[hook("/proc/cpu_values")]
@@ -39,6 +64,20 @@ fn cpu_values() {
 		list.set(index as u32 + 1, value)?;
 	}
 	Ok(list.into())
+}
+
+#[hook("/proc/map_cpu_values")]
+fn map_cpu_values() {
+	let list = List::with_size(16);
+	for (index, value) in auxcpu_core::map_cpu_table().into_iter().enumerate() {
+		list.set(index as u32 + 1, value)?;
+	}
+	Ok(list.into())
+}
+
+#[hook("/proc/map_cpu_signatures_found")]
+fn map_cpu_signatures_found() {
+	Ok(Value::from(auxcpu_core::map_cpu_signatures_found()))
 }
 
 #[cfg(feature = "maptick")]

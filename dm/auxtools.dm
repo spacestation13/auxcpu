@@ -8,10 +8,25 @@
 /proc/current_cpu_index()
 	CRASH()
 
+/proc/current_true_map_cpu()
+	CRASH()
+
+/proc/current_map_cpu_index()
+	CRASH()
+
 /proc/true_cpu_at_index(index)
 	CRASH()
 
+/proc/true_map_cpu_at_index(index)
+	CRASH()
+
 /proc/cpu_values()
+	CRASH()
+
+/proc/map_cpu_values()
+	CRASH()
+
+/proc/map_cpu_signatures_found()
 	CRASH()
 
 #ifdef MAPTICK_HOOK

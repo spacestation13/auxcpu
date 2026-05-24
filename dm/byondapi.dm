@@ -9,11 +9,26 @@ var/static/__current_true_cpu
 var/static/__current_cpu_index
 #define current_cpu_index(...) call_ext(__current_cpu_index ||= load_ext(AUXCPU_DLL, "byond:current_cpu_index"))()
 
+var/static/__current_true_map_cpu
+#define current_true_map_cpu(...) call_ext(__current_true_map_cpu ||= load_ext(AUXCPU_DLL, "byond:current_true_map_cpu"))()
+
+var/static/__current_map_cpu_index
+#define current_map_cpu_index(...) call_ext(__current_map_cpu_index ||= load_ext(AUXCPU_DLL, "byond:current_map_cpu_index"))()
+
 var/global/__true_cpu_at_index
 #define true_cpu_at_index(index) call_ext(__true_cpu_at_index ||= load_ext(AUXCPU_DLL, "byond:true_cpu_at_index"))(index)
 
+var/global/__true_map_cpu_at_index
+#define true_map_cpu_at_index(index) call_ext(__true_map_cpu_at_index ||= load_ext(AUXCPU_DLL, "byond:true_map_cpu_at_index"))(index)
+
 var/global/__cpu_values
 #define cpu_values(...) call_ext(__cpu_values ||= load_ext(AUXCPU_DLL, "byond:cpu_values"))()
+
+var/global/__map_cpu_values
+#define map_cpu_values(...) call_ext(__map_cpu_values ||= load_ext(AUXCPU_DLL, "byond:map_cpu_values"))()
+
+var/global/__map_cpu_signatures_found
+#define map_cpu_signatures_found(...) call_ext(__map_cpu_signatures_found ||= load_ext(AUXCPU_DLL, "byond:map_cpu_signatures_found"))()
 
 #ifdef MAPTICK_HOOK
 var/global/__true_maptick

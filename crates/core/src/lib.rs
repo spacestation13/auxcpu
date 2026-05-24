@@ -5,14 +5,29 @@ use cfg_if::cfg_if;
 static mut CPU_VALUE_TABLE: *mut [f32; 16] = std::ptr::null_mut();
 static mut CPU_INDEX: *mut u8 = std::ptr::null_mut();
 
+static mut MAP_CPU_VALUE_TABLE: *mut [f32; 16] = std::ptr::null_mut();
+static mut MAP_CPU_INDEX: *mut u8 = std::ptr::null_mut();
+
 /// Returns the current CPU index.
 pub fn current_index() -> usize {
 	unsafe { (CPU_INDEX.read().wrapping_sub(1) & 0xF) as usize }
 }
 
+pub fn current_map_index() -> Result<usize, String> {
+	if !map_cpu_signatures_found() {
+		return Err("MAP_CPU signatures have not been found".to_owned());
+	}
+	Ok(unsafe { (MAP_CPU_INDEX.read().wrapping_sub(1) & 0xF) as usize })
+}
+
 /// Returns the CPU value of the current index.
 pub fn read_cpu() -> f32 {
 	unsafe { *(*CPU_VALUE_TABLE).get_unchecked(current_index()) }
+}
+
+/// Returns the map-send CPU value of the current index.
+pub fn read_map_cpu() -> Result<f32, String> {
+	read_map_cpu_at_index(current_index())
 }
 
 /// Reads the CPU value at the given index.
@@ -22,6 +37,21 @@ pub fn read_cpu_at_index(index: usize) -> Result<f32, String> {
 		.get(index)
 		.copied()
 		.ok_or_else(|| format!("CPU index must be 0-15 (got {})", index))
+}
+
+/// Reads the map-send CPU value at the given index.
+/// Index must be between 0 and 15.
+pub fn read_map_cpu_at_index(index: usize) -> Result<f32, String> {
+	if !map_cpu_signatures_found() {
+		return Err("MAP_CPU signatures have not been found".to_owned());
+	}
+
+	let cpu = read_cpu_at_index(index)?;
+	let pre_map_cpu = unsafe { *MAP_CPU_VALUE_TABLE }
+		.get(index)
+		.copied()
+		.ok_or_else(|| format!("map CPU index must be 0-15 (got {})", index))?;
+	Ok(cpu - pre_map_cpu)
 }
 
 /* don't use this for now
@@ -46,15 +76,37 @@ pub fn cpu_table() -> [f32; 16] {
 	}
 }
 
+pub fn map_cpu_table() -> [f32; 16] {
+	if !map_cpu_signatures_found() {
+		return [0.0; 16];
+	}
+
+	let mut values = [0.0; 16];
+	let cpu_values = cpu_table();
+	let pre_map_values = unsafe { *MAP_CPU_VALUE_TABLE };
+	for (index, value) in values.iter_mut().enumerate() {
+		*value = cpu_values[index] - pre_map_values[index];
+	}
+	values
+}
+
+pub fn map_cpu_signatures_found() -> bool {
+	unsafe { !MAP_CPU_VALUE_TABLE.is_null() && !MAP_CPU_INDEX.is_null() }
+}
+
 cfg_if! {
 	if #[cfg(windows)] {
 		const BYONDCORE: &str = "byondcore.dll";
 		const CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (5, convert_signature!("F3 0F 11 04 85 ?? ?? ?? ?? 33 C0"));
 		const CPU_INDEX_SIGNATURE: SignatureAndOffset = (2, convert_signature!("88 0D ?? ?? ?? ?? F2 0F 5E C8 66 0F 5A C1"));
+		const MAP_CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (5, convert_signature!("F3 0F 11 04 85 ?? ?? ?? ?? 1A C0"));
+		const MAP_CPU_INDEX_SIGNATURE: SignatureAndOffset = (1, convert_signature!("A2 ?? ?? ?? ?? F3 0F 11 0D"));
 	} else {
 		const BYONDCORE: &str = "libbyond.so";
 		const CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (3, convert_signature!("D8 24 8D"));
 		const CPU_INDEX_SIGNATURE: SignatureAndOffset = (1, convert_signature!("A2 ?? ?? ?? ?? D9 1C 24"));
+		const MAP_CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (3, convert_signature!("D9 1C 95 ?? ?? ?? ?? D8 0D ?? ?? ?? ?? 31 D2 3C 10 0F 43 C2"));
+		const MAP_CPU_INDEX_SIGNATURE: SignatureAndOffset = (8, convert_signature!("31 D2 3C 10 0F 43 C2 A2 ?? ?? ?? ??"));
 	}
 }
 
@@ -64,9 +116,19 @@ pub fn find_signatures() -> Result<(), String> {
 	let cpu_value_table_ptr =
 		find(&scanner, &CPU_VALUE_TABLE_SIGNATURE).ok_or("Failed to find CPU_VALUE_TABLE")?;
 	let cpu_index_ptr = find(&scanner, &CPU_INDEX_SIGNATURE).ok_or("Failed to find CPU_INDEX")?;
+
+	let map_cpu_value_table_ptr = find(&scanner, &MAP_CPU_VALUE_TABLE_SIGNATURE)
+		.and_then(|table| find(&scanner, &MAP_CPU_INDEX_SIGNATURE).map(|index| (table, index)));
 	unsafe {
 		CPU_VALUE_TABLE = cpu_value_table_ptr as _;
 		CPU_INDEX = cpu_index_ptr as _;
+		if let Some((map_cpu_value_table_ptr, map_cpu_index_ptr)) = map_cpu_value_table_ptr {
+			MAP_CPU_VALUE_TABLE = map_cpu_value_table_ptr as _;
+			MAP_CPU_INDEX = map_cpu_index_ptr as _;
+		} else {
+			MAP_CPU_VALUE_TABLE = std::ptr::null_mut();
+			MAP_CPU_INDEX = std::ptr::null_mut();
+		}
 	}
 	Ok(())
 }

@@ -24,13 +24,40 @@ pub fn current_cpu_index() -> u8 {
 }
 
 #[byond_fn]
+pub fn current_true_map_cpu() -> Option<f32> {
+	auxcpu_core::read_map_cpu().ok()
+}
+
+#[byond_fn]
+pub fn current_map_cpu_index() -> Option<u8> {
+	auxcpu_core::current_map_index()
+		.map(|index| index as u8)
+		.ok()
+}
+
+#[byond_fn]
 pub fn true_cpu_at_index(index: usize) -> f32 {
 	auxcpu_core::read_cpu_at_index(index).expect("failed to read cpu")
 }
 
 #[byond_fn]
+pub fn true_map_cpu_at_index(index: usize) -> Option<f32> {
+	auxcpu_core::read_map_cpu_at_index(index).ok()
+}
+
+#[byond_fn]
 pub fn cpu_values() -> [f32; 16] {
 	auxcpu_core::cpu_table()
+}
+
+#[byond_fn]
+pub fn map_cpu_values() -> [f32; 16] {
+	auxcpu_core::map_cpu_table()
+}
+
+#[byond_fn]
+pub fn map_cpu_signatures_found() -> bool {
+	auxcpu_core::map_cpu_signatures_found()
 }
 
 #[cfg(feature = "maptick")]
