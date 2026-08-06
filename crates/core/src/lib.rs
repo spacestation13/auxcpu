@@ -104,7 +104,7 @@ cfg_if! {
 	} else {
 		const BYONDCORE: &str = "libbyond.so";
 		const CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (3, convert_signature!("D8 24 8D"));
-		const CPU_INDEX_SIGNATURE: SignatureAndOffset = (1, convert_signature!("A2 ?? ?? ?? ?? D9 1C 24"));
+		const CPU_INDEX_SIGNATURE: SignatureAndOffset = (3, convert_signature!("0F B6 0D ?? ?? ?? ?? 66 0F D6 44 24"));
 		const MAP_CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (3, convert_signature!("D9 1C 95 ?? ?? ?? ?? D8 0D ?? ?? ?? ?? 31 D2 3C 10 0F 43 C2"));
 		const MAP_CPU_INDEX_SIGNATURE: SignatureAndOffset = (8, convert_signature!("31 D2 3C 10 0F 43 C2 A2 ?? ?? ?? ??"));
 	}
