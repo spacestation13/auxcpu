@@ -14,22 +14,20 @@ pub type SignatureAndOffset = (usize, Signature);
 pub fn find(scanner: &Scanner, &(offset, signature): &SignatureAndOffset) -> Option<*mut u8> {
 	scanner.find(signature).map(|address| unsafe {
 		let to_read = address.add(offset) as *const *mut u8;
-		/* eprintln!(
-			"to_tread: {:?}",
-			to_read.byte_sub(scanner.data_begin as usize)
-		); */
 		to_read.read_unaligned()
 	})
 }
 
-pub fn find_call(scanner: &Scanner, &(_offset, signature): &SignatureAndOffset) -> Option<*mut u8> {
+/// offset points at the call opcode
+pub fn find_call(scanner: &Scanner, &(offset, signature): &SignatureAndOffset) -> Option<*mut u8> {
+	if signature.get(offset) != Some(&Some(0xE8)) || signature.len().checked_sub(offset)? < 5 {
+		return None;
+	}
+	// SAFETY: full signature match includes the opcode and all four of the other
+	// bytes
 	scanner.find(signature).map(|address| unsafe {
-		let offset = (address.offset(1) as *const isize).read_unaligned();
-		address.offset(5).offset(offset)
-		/* eprintln!(
-			"offset: {:?}, call_addr: {:?}",
-			offset,
-			call_addr.byte_sub(scanner.data_begin as usize)
-		); */
+		let call = address.add(offset);
+		let displacement = call.add(1).cast::<i32>().read_unaligned();
+		call.wrapping_add(5).wrapping_offset(displacement as isize)
 	})
 }
