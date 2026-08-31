@@ -1,6 +1,6 @@
 #![allow(static_mut_refs)]
 use auxcpu_impl::convert_signature;
-use auxcpu_sigscan::{Scanner, SignatureAndOffset};
+use auxcpu_sigscan::{Scanner, SignatureAndOffset, find_call};
 use cfg_if::cfg_if;
 use retour::RawDetour;
 use std::{cell::RefCell, time::Instant};
@@ -13,10 +13,10 @@ thread_local!(static SEND_MAPS_DETOUR: RefCell<Option<RawDetour>> = const { RefC
 cfg_if! {
 	if #[cfg(windows)] {
 		const BYONDCORE: &str = "byondcore.dll";
-		const SEND_MAPS_SIGNATURE: SignatureAndOffset = (1, convert_signature!("E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 2B C3"));
+		const SEND_MAPS_SIGNATURE: SignatureAndOffset = (8, convert_signature!("F3 0F 11 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ??"));
 	} else {
 		const BYONDCORE: &str = "libbyond.so";
-		const SEND_MAPS_SIGNATURE: SignatureAndOffset = (0, convert_signature!("55 89 E5 57 56 53 81 EC ?? ?? ?? ?? 65 A1"));
+		const SEND_MAPS_SIGNATURE: SignatureAndOffset = (11, convert_signature!("A2 ?? ?? ?? ?? D9 1D ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ??"));
 	}
 }
 
@@ -38,13 +38,8 @@ pub fn init() -> Result<(), String> {
 		"byondcore: {:?} -> {:?}",
 		scanner.data_begin, scanner.data_end
 	); */
-	cfg_if! {
-		if #[cfg(windows)] {
-			let send_maps_ptr = auxcpu_sigscan::find_call(&scanner, &SEND_MAPS_SIGNATURE).ok_or("Failed to find send_maps")?;
-		} else {
-			let send_maps_ptr = auxcpu_sigscan::find(&scanner, &SEND_MAPS_SIGNATURE).ok_or("Failed to find send_maps")?;
-		}
-	};
+	let send_maps_ptr =
+		find_call(&scanner, &SEND_MAPS_SIGNATURE).ok_or("Failed to find send_maps")?;
 	/* eprintln!("send_maps_ptr: {:?}", unsafe {
 		send_maps_ptr.byte_sub(scanner.data_begin as usize)
 	}); */

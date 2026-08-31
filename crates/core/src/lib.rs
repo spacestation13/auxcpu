@@ -97,16 +97,18 @@ pub fn map_cpu_signatures_found() -> bool {
 cfg_if! {
 	if #[cfg(windows)] {
 		const BYONDCORE: &str = "byondcore.dll";
-		const CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (5, convert_signature!("F3 0F 11 04 85 ?? ?? ?? ?? 33 C0"));
-		const CPU_INDEX_SIGNATURE: SignatureAndOffset = (2, convert_signature!("88 0D ?? ?? ?? ?? F2 0F 5E C8 66 0F 5A C1"));
-		const MAP_CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (5, convert_signature!("F3 0F 11 04 85 ?? ?? ?? ?? 1A C0"));
-		const MAP_CPU_INDEX_SIGNATURE: SignatureAndOffset = (1, convert_signature!("A2 ?? ?? ?? ?? F3 0F 11 0D"));
+		const CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (5, convert_signature!("F3 0F 5C 0C 85 ?? ?? ?? ?? F3 0F 11 04 85 ?? ?? ?? ??"));
+		const CPU_VALUE_TABLE_WRITE_OFFSET: usize = 14;
+		const CPU_INDEX_SIGNATURE: SignatureAndOffset = (7, convert_signature!("FE C1 80 E1 0F 88 0D ?? ?? ?? ??"));
+		const MAP_CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (5, convert_signature!("F3 0F 11 04 85 ?? ?? ?? ?? 1A C0 22 C1 A2 ?? ?? ?? ??"));
+		const MAP_CPU_INDEX_SIGNATURE: SignatureAndOffset = (14, MAP_CPU_VALUE_TABLE_SIGNATURE.1);
 	} else {
 		const BYONDCORE: &str = "libbyond.so";
-		const CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (3, convert_signature!("D8 24 8D"));
-		const CPU_INDEX_SIGNATURE: SignatureAndOffset = (1, convert_signature!("A2 ?? ?? ?? ?? D9 1C 24"));
-		const MAP_CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (3, convert_signature!("D9 1C 95 ?? ?? ?? ?? D8 0D ?? ?? ?? ?? 31 D2 3C 10 0F 43 C2"));
-		const MAP_CPU_INDEX_SIGNATURE: SignatureAndOffset = (8, convert_signature!("31 D2 3C 10 0F 43 C2 A2 ?? ?? ?? ??"));
+		const CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (3, convert_signature!("D8 24 8D ?? ?? ?? ?? D8 C1 D9 15 ?? ?? ?? ?? D9 C9 D9 1C 8D ?? ?? ?? ??"));
+		const CPU_VALUE_TABLE_WRITE_OFFSET: usize = 20;
+		const CPU_INDEX_SIGNATURE: SignatureAndOffset = (9, convert_signature!("83 C0 01 83 E0 0F DE F9 A2 ?? ?? ?? ??"));
+		const MAP_CPU_VALUE_TABLE_SIGNATURE: SignatureAndOffset = (3, convert_signature!("D9 1C 95 ?? ?? ?? ?? D8 0D ?? ?? ?? ?? 31 D2 3C 10 0F 43 C2 A2 ?? ?? ?? ??"));
+		const MAP_CPU_INDEX_SIGNATURE: SignatureAndOffset = (21, MAP_CPU_VALUE_TABLE_SIGNATURE.1);
 	}
 }
 
@@ -115,6 +117,16 @@ pub fn find_signatures() -> Result<(), String> {
 		.map_err(|error| format!("Failed to scan {BYONDCORE}: {error}"))?;
 	let cpu_value_table_ptr =
 		find(&scanner, &CPU_VALUE_TABLE_SIGNATURE).ok_or("Failed to find CPU_VALUE_TABLE")?;
+	// gotta make sure these agree
+	if find(
+		&scanner,
+		&(CPU_VALUE_TABLE_WRITE_OFFSET, CPU_VALUE_TABLE_SIGNATURE.1),
+	) != Some(cpu_value_table_ptr)
+	{
+		return Err(
+			"CPU_VALUE_TABLE read and write addresses disagree, something's fucked.".to_owned(),
+		);
+	}
 	let cpu_index_ptr = find(&scanner, &CPU_INDEX_SIGNATURE).ok_or("Failed to find CPU_INDEX")?;
 
 	let map_cpu_value_table_ptr = find(&scanner, &MAP_CPU_VALUE_TABLE_SIGNATURE)
