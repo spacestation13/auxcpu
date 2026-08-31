@@ -12,7 +12,7 @@ crate-type = ["cdylib"]
 [dependencies]
 auxcpu-core = { path = "../core" }
 auxcpu-maptick = { path = "../maptick", optional = true }
-meowtonin = { git = "https://github.com/Absolucy/meowtonin" }
+meowtonin = "0.3"
 
 [lints]
 workspace = true
