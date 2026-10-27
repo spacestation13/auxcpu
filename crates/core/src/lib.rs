@@ -47,11 +47,15 @@ pub fn read_map_cpu_at_index(index: usize) -> Result<f32, String> {
 	}
 
 	let cpu = read_cpu_at_index(index)?;
-	let pre_map_cpu = unsafe { *MAP_CPU_VALUE_TABLE }
-		.get(index)
-		.copied()
-		.ok_or_else(|| format!("map CPU index must be 0-15 (got {})", index))?;
+	let pre_map_cpu = unsafe { (*MAP_CPU_VALUE_TABLE)[(index + 16 - pre_map_lag()) & 0xF] };
 	Ok(cpu - pre_map_cpu)
+}
+
+/// byond doesn't write the pre-send table on ticks that skip map sending, so
+/// its index falls behind CPU_INDEX by this many slots.
+/// Only valid once the map signatures are found.
+fn pre_map_lag() -> usize {
+	unsafe { (CPU_INDEX.read().wrapping_sub(MAP_CPU_INDEX.read()) & 0xF) as usize }
 }
 
 /* don't use this for now
@@ -84,8 +88,9 @@ pub fn map_cpu_table() -> [f32; 16] {
 	let mut values = [0.0; 16];
 	let cpu_values = cpu_table();
 	let pre_map_values = unsafe { *MAP_CPU_VALUE_TABLE };
+	let lag = pre_map_lag();
 	for (index, value) in values.iter_mut().enumerate() {
-		*value = cpu_values[index] - pre_map_values[index];
+		*value = cpu_values[index] - pre_map_values[(index + 16 - lag) & 0xF];
 	}
 	values
 }
